@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cmake",
+			"label": "CMake: сборка",
+			"command": "build",
+			"targets": [
+				"[Нет данных — выберите комплект]"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "Задача шаблона CMake сборка"
+		}
+	]
+}
