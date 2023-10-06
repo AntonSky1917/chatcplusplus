@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include "mixins.hpp"
 #include "server_messages.hpp"
+#include "logger.hpp"
 
 class User {
 public:
@@ -86,8 +87,8 @@ void split(const std::string& str, char delimiter, std::vector<std::string>& tok
 class ChatServerProtocol : public DbInterfaceMixin, public ConvertMixin, public JimServerMessage {
 public:
 
-    ChatServerProtocol(Database db, int server_socket)
-        : DbInterfaceMixin(std::move(db)), server_socket(server_socket) {}
+    ChatServerProtocol(Database db, int server_socket, const std::string& logFilename)
+        : DbInterfaceMixin(std::move(db)), server_socket(server_socket), logger_(std::make_unique<Logger>(logFilename)) {}
     
     ~ChatServerProtocol() {}
 
@@ -283,6 +284,7 @@ public:
     void sendMessage(int socket, const std::string& message) {
         std::string message_str = message + "\n"; // добавляет символ новой строки (\n) к сообщению.
         send(socket, message_str.c_str(), message_str.length(), 0);
+        logger_->logMessage(message);
     }
 
     void send_response(int client_socket, const std::string& error = "") {
@@ -592,6 +594,10 @@ public:
         return -1;
     }
 
+    // void setLogFilename(const std::string& logFilename) {
+    //     logger_ = Logger(logFilename);
+    // }
+
 private:
     std::vector<std::shared_ptr<User>> users;
     std::unordered_map<int, std::unordered_map<std::string, std::string>> connections;
@@ -601,6 +607,7 @@ private:
     std::mutex connectionsMutex;
     std::mutex usersMutex;
     int server_socket;
+    std::unique_ptr<Logger> logger_;
 };
 
 int main(int argc, char *argv[])
@@ -642,7 +649,8 @@ int main(int argc, char *argv[])
     ConvertMixin convertMixin;
     DataAccessLayer dal;
     Database db(&dal);
-    std::unique_ptr<ChatServerProtocol> protocol(new ChatServerProtocol(std::move(db), server_socket));
+    std::unique_ptr<ChatServerProtocol> protocol(new ChatServerProtocol(std::move(db), server_socket, "logFileName.txt"));
+    //protocol->setLogFilename("logFileName.txt");
 
     while (true) // запускаем цикл который будет принимать подключения от клиентов.
     {
